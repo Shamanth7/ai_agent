@@ -134,3 +134,15 @@ print(answer)
    * `client.chat.completions.create(...)` sends the model name and message history to Groq and returns a structured `ChatCompletion` object.
    * `print(response)` outputs the full metadata object (including `id`, `model`, `usage` token counts, and `choices`).
    * `response.choices[0].message.content` extracts only the generated text reply from the first candidate response (`choices[0]`).
+
+
+## How to Run
+
+From inside the `hebdomad/period1` directory:
+
+```bash
+uv run python hello_llm.py
+
+'''or best for all python program'''
+python -m hello_llm
+```
