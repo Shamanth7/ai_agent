@@ -29,7 +29,7 @@ for prompt in prompts:
     usage=response.usage
     print(f"Prompt: {prompt} -->your tokens: {usage.prompt_tokens} completion_tokens: {usage.completion_tokens} total tokens: {usage.total_tokens}  Finish Reason: {response.choices[0].finish_reason}")
 
-# prompt="Do you know Padho with Pratyush"
+# prompt="Do you know about groq"
 # # message me role and content
 # message={
 #     "role": role,
