@@ -20,4 +20,4 @@ openai/gpt-oss-120b
 canopylabs/orpheus-v1-english
 whisper-large-v3-turbo
 
-it will update by the groq by api key'''
+some time the groq api changes or update the model name so first check the model name '''
