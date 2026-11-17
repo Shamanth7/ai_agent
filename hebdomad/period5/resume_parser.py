@@ -286,10 +286,7 @@ for file_path in resume_folder.iterdir():
     parsed_resume=parse_resume(resume_text) # llm call1
     time.sleep(5)
     result = final_score(job, parsed_resume) #llm caLL2
-    #score and details
-    #acount chtgpt
-    # request bhejna shhur krega millions
-    #chattgot server jam ho jayega
+    # we are putting the rate limit to dont stop by the groq (groq have some limit if we do obay it will stop the responce // time.sleep(5) is also less we should put time.sleep(20))
     time.sleep(5)
     print("Score:", result.score)
     all_results.append({

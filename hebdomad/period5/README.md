@@ -326,6 +326,11 @@ python -m resume_parser
 
 ---
 
+## One problem will occur that is rate limit of the groq 
+ ''' text
+ we are putting the rate limit to dont stop by the groq (groq have some limit if we do obay it will stop the responce // time.sleep(5) is also less we should put time.sleep(20))
+ '''
+
 ## Recap & Engineering Takeaways
 
 1. **Client Isolation**: Virtual environments (`uv venv`) guarantee that dependency conflicts never corrupt disparate modules.
