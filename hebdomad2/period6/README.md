@@ -160,12 +160,12 @@ My marriage is broke
 print(llm_ans(bad_prompt))
 ```
 ### once see
-'''text
+```text
 if in the :- his is a user complaint:
 My marriage is broke
 if i add :- my laptop is not working (in this paragraph only)
 the output will be --> techincal
-'''
+```
 ### How the Program Works
 
 1. **Environment & Security Setup (`load_dotenv` & `os.getenv`)**
