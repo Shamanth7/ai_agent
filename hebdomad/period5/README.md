@@ -321,7 +321,7 @@ for file_path in resume_folder.iterdir():
 
 ## to Run
 ```bash
-python -m period5
+python -m resume_parser
 ```
 
 ---
