@@ -110,3 +110,77 @@ For instance: If customer says "I want a refund", category is "Return".
 FALLBACK:
 If the issue is completely unrelated to any of the categories mentioned in Constraints, your answer must be "Other".
 ```
+
+### Code Example
+
+```python
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+from groq import Groq
+
+load_dotenv()
+my_api_key = os.getenv("GROQ_API_KEY")
+
+if not my_api_key:
+    raise ValueError("where is your api key")
+
+client = Groq(api_key=my_api_key)
+model = "openai/gpt-oss-120b"
+
+
+def llm_ans(prompt):
+    message = {
+        "role": "user",
+        "content": prompt
+    }
+    messages = [message]
+    response = client.chat.completions.create(model=model, messages=messages)
+    ans = response.choices[0].message.content
+    return ans
+
+
+bad_prompt = """
+#ROLE:
+You are a support assistant at a mobile/laptop company
+#TASK
+You have to classify the issue in a category
+#CONSTRAINT
+You have to classify the issue in one of three categories namely billing, technical, return.
+#OUTPUT FORMAT
+Your answer should be in one word only. The one word shoud be one of the categories given in constraints
+#Example
+For instance if a user compalin says he wants a refund then the category is Return
+#FALLBACK
+If the issue is unrelated to any of the categories mentioned in constraints, then the answer should be OTHER
+This is a user complaint:
+My marriage is broke
+"""
+
+print(llm_ans(bad_prompt))
+```
+### once see
+'''text
+if in the :- his is a user complaint:
+My marriage is broke
+if i add :- my laptop is not working (in this paragraph only)
+the output will be --> techincal
+'''
+### How the Program Works
+
+1. **Environment & Security Setup (`load_dotenv` & `os.getenv`)**
+   * Loads environment variables from a local `.env` file so sensitive credentials like `GROQ_API_KEY` are never hardcoded in source control.
+   * Performs a fail-fast validation check (`if not my_api_key: raise ValueError(...)`) before initializing the API client.
+
+2. **Groq Client & Model Configuration**
+   * Initializes the `Groq` client with the authenticated API key and targets the `openai/gpt-oss-120b` model for inference.
+
+3. **The Inference Wrapper (`llm_ans`)**
+   * Wraps the input string into the standard Chat Completions message structure (`[{"role": "user", "content": prompt}]`).
+   * Calls `client.chat.completions.create(...)` and extracts the generated text via `response.choices[0].message.content`.
+
+4. **Testing the 6-Pillar Prompt & Edge Case (`bad_prompt`)**
+   * Despite the variable name `bad_prompt`, the string actually implements all **6 Pillars** (`#ROLE`, `#TASK`, `#CONSTRAINT`, `#OUTPUT FORMAT`, `#Example`, and `#FALLBACK`).
+   * **The Edge Case Test:** The user input is `"My marriage is broke"`—an out-of-domain personal problem unrelated to laptops or mobile devices.
+   * **Expected Output:** `OTHER`
+   * **Why It Succeeds:** Because of the `#FALLBACK` and `#OUTPUT FORMAT` pillars, the model resists forcing the input into `billing`, `technical`, or `return`, avoids giving unsolicited relationship advice, and outputs a clean, single-word `OTHER` that downstream code can safely handle.
