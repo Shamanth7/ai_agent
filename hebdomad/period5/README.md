@@ -1,6 +1,5 @@
-# Episode 06: AI Resume Screener & Job Matcher (End-of-Week 1 Mini Project)
+# AI Resume Screener & Job Matcher 
 
-Part of the **Free 8-Week AI Engineer Course** by Pratyush Narayan (*Padho with Pratyush*).
 
 This project culminates Week 1 by combining every foundational concept covered so far—**Groq API client registration, system roles, temperature calibration, token limits, and Pydantic-enforced JSON structured outputs**—into an end-to-end, production-style AI tool: an automated **HR Resume Evaluator & Candidate Matcher**.
 
@@ -326,7 +325,7 @@ python -m resume_parser
 
 ---
 
-## One problem will occur that is rate limit of the groq 
+# One problem will occur that is rate limit of the groq 
  ''' text
  we are putting the rate limit to dont stop by the groq (groq have some limit if we do obay it will stop the responce // time.sleep(5) is also less we should put time.sleep(20))
  '''
