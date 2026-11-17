@@ -105,20 +105,46 @@ uv add groq python-dotenv pydantic pypdf python-docx
 
 ---
 
-## 5. Complete Code Implementation (`main.py`)
+## 5. Complete Code Implementation 
+
+# AI Resume Screener & Job Matcher (Complete Code Walkthrough)
+
+This document provides a detailed, step-by-step explanation of your Python implementation for the **AI HR Resume Screener & Candidate Matcher** project.
+
+---
+
+## 1. End-to-End Execution Flow
+
+Your script processes a Job Description (JD) and a folder of resumes in **5 distinct stages**:
+
+```text
+[Raw Job Description] ──> LLM Call (JobD Schema) ──> Validated `job` Object
+                                                              │
+[resumes/ Folder]                                             ▼
+  ├── candidate1.pdf ──> read_pdf() ──> parse_resume() ──> final_score() ──> all_results
+  └── candidate2.docx ─> read_docx() ─> parse_resume() ──> final_score() ──> all_results
+                                                                                  │
+                                                       Sort Descending ◄──────────┘
+                                                              │
+                                           ┌──────────────────┴──────────────────┐
+                                           ▼                                     ▼
+                                   TOP 2 CANDIDATES                     LOWEST 2 CANDIDATES
+```
+
+---
+
+## 2. Section-by-Section Code Breakdown
+
+### Section A: Environment Setup & Groq Client Registration
 
 ```python
 import os
-import json
 import time
 from pathlib import Path
 from dotenv import load_dotenv
 from groq import Groq
-from pydantic import BaseModel
-from pypdf import PdfReader
-from docx import Document
+from pydantic import BaseModel, Field
 
-# 1. Load environment & initialize client
 load_dotenv()
 my_api_key = os.getenv("GROQ_API_KEY")
 
@@ -127,8 +153,18 @@ if not my_api_key:
 
 client = Groq(api_key=my_api_key)
 model = "openai/gpt-oss-120b"
+```
 
-# 2. Define Pydantic Schemas
+* **`load_dotenv()` & `os.getenv("GROQ_API_KEY")`**: Loads your secret API key from the `.env` file without hardcoding credentials in your script.
+* **Guard Check**: Raises a `ValueError` immediately if the key is missing so the script fails fast rather than throwing cryptic authentication errors later.
+* **`client = Groq(...)`**: Authenticates your script with the Groq API server.
+* **`model = "openai/gpt-oss-120b"`**: Uses a 120-billion-parameter model capable of following complex JSON schemas and performing nuanced HR evaluations.
+
+---
+
+### Section B: Structuring the Job Description (`JobD` Schema)
+
+```python
 class JobD(BaseModel):
     role: str
     required_skills: list[str]
@@ -137,6 +173,26 @@ class JobD(BaseModel):
     education_requirements: list[str]
     responsibilities: list[str]
 
+jobd_schema = JobD.model_json_schema()
+```
+
+* **Why convert the JD into JSON first?** Raw job descriptions (like the Amazon SDE-I posting in your code) contain company culture paragraphs and marketing text. Converting it into a `JobD` Pydantic model isolates only the actionable hiring criteria.
+* **`minimum_experience: float | None`**: Entry-level roles (like SDE-I) often do not specify minimum years of experience. Allowing `None` (`null` in JSON) prevents validation errors when no number is stated.
+* **Prompt Guardrails in `system_prompt`**:
+  * `Do NOT return the schema itself. Do NOT return fields like "properties", "title" or "type".` — Prevents the LLM from echoing back the raw JSON schema blueprint instead of the extracted data.
+  * `Do not invent information.` — Prevents hallucinations.
+* **Deserialization**:
+  ```python
+  job_data = json.loads(raw_json)
+  job = JobD(**job_data)
+  ```
+  Converts the raw JSON string returned by the LLM into a Python dictionary (`json.loads`), then unpacks it (`**job_data`) into a strongly typed `JobD` instance.
+
+---
+
+### Section C: Hierarchical Resume Schemas (`Experience` & `Resume`)
+
+```python
 class Experience(BaseModel):
     company: str | None = None
     role: str | None = None
@@ -154,13 +210,20 @@ class Resume(BaseModel):
     education: list[str] = []
     projects: list[str] = []
     certifications: list[str] = []
+```
 
-class MatchResult(BaseModel):
-    score: float
-    details: dict
+* **Nested Modeling (`experiences: list[Experience]`)**: Because candidates may have multiple internships or jobs, each role is captured as its own structured `Experience` object inside a list.
+* **Optional Defaults (`= None` and `= []`)**: Resumes vary widely—some freshers have no work experience, no certifications, or omit a phone number. Defaulting missing fields to `None` or `[]` ensures Pydantic never crashes on incomplete resumes.
+* **`parse_resume(resume_text)`**:
+  * Instructs the LLM to extract based on **meaning**, not exact section titles (e.g., recognizing *Work History*, *Employment*, and *Internships* under `experiences`).
+  * Extracts skills mentioned anywhere in the resume (projects, internships, or dedicated skills sections).
 
-# 3. Document Reader Helpers
-def read_pdf(file_path: Path) -> str:
+---
+
+### Section D: Multi-Format Document Readers (`read_pdf`, `read_docx`, `read_resume`)
+
+```python
+def read_pdf(file_path):
     reader = PdfReader(file_path)
     text = ""
     for page in reader.pages:
@@ -169,12 +232,13 @@ def read_pdf(file_path: Path) -> str:
             text += page_text + "\n"
     return text
 
-def read_docx(file_path: Path) -> str:
+def read_docx(file_path):
     document = Document(file_path)
     text = ""
     for paragraph in document.paragraphs:
         if paragraph.text.strip():
             text += paragraph.text + "\n"
+    
     for table in document.tables:
         for row in table.rows:
             for cell in row.cells:
@@ -182,128 +246,82 @@ def read_docx(file_path: Path) -> str:
                     text += cell.text + "\n"
     return text
 
-def read_resume(file_path: Path) -> str | None:
+def read_resume(file_path):
     if file_path.suffix.lower() == ".pdf":
         return read_pdf(file_path)
     elif file_path.suffix.lower() == ".docx":
         return read_docx(file_path)
-    return None
+    else:
+        return None
+```
 
-# 4. LLM Parsing & Scoring Functions
-def parse_job_description(jd_text: str) -> JobD:
-    jobd_schema = JobD.model_json_schema()
-    system_prompt = f"""
-    You are an expert HR assistant. Analyze job descriptions and extract structured information.
-    Return ONLY valid JSON matching this schema:
-    {jobd_schema}
+* **`read_pdf()`**: Uses `pypdf.PdfReader` to loop through every page of a PDF and concatenate its extracted text.
+* **`read_docx()`**: Uses `python-docx` to extract text from both:
+  1. **Standard paragraphs** (`document.paragraphs`).
+  2. **Tables** (`document.tables` $\rightarrow$ `rows` $\rightarrow$ `cells`)—critical because many candidates format their 10th/12th/college grades or skills inside Word tables, which `document.paragraphs` alone would miss.
+* **`read_resume()`**: Checks the file extension (`file_path.suffix.lower()`) and routes the file to the appropriate parser.
 
-    IMPORTANT:
-    - Do NOT return the schema itself (no "properties", "title", or "type").
-    - If minimum experience is not mentioned, return null.
-    - If information for a list is missing, return an empty list.
-    - Do not invent information.
-    """
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Analyze the following job description:\n{jd_text}"}
-        ],
-        response_format={"type": "json_object"}
-    )
-    return JobD(**json.loads(response.choices[0].message.content))
+---
 
-def parse_resume(resume_text: str) -> Resume:
-    resume_schema = Resume.model_json_schema()
-    system_prompt = f"""
-    You are an expert resume parser. Extract information based on meaning across sections
-    (Experience, Work History, Employment, Internships, Projects, Skills).
-    Return ONLY valid JSON matching this schema:
-    {resume_schema}
+### Section E: Candidate Scoring Engine (`MatchResult` & `final_score`)
 
-    Rules:
-    1. Do not invent information.
-    2. Return null for missing scalar values and [] for missing lists.
-    3. Include internships inside experiences.
-    """
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Parse the following resume:\n{resume_text}"}
-        ],
-        response_format={"type": "json_object"}
-    )
-    return Resume(**json.loads(response.choices[0].message.content))
+```python
+class MatchResult(BaseModel):
+    score: float
+    details: dict
+```
 
-def final_score(job: JobD, resume: Resume) -> MatchResult:
-    match_schema = MatchResult.model_json_schema()
-    prompt = f"""
-    You are an HR recruiter. Compare the candidate's resume with the job description.
+* **`final_score(job, resume)`**:
+  * Serializes both validated objects using `job.model_dump_json(indent=2)` and `resume.model_dump_json(indent=2)`.
+  * Asks the LLM (acting as an HR recruiter) to return a JSON object matching `MatchResult` containing:
+    * `score`: A float between `0` and `100`.
+    * `details`: A dictionary containing candidate name, matching skills, missing important skills, experience requirement status, match percentage, and a concise final verdict.
 
-    JOB DESCRIPTION:
-    {job.model_dump_json(indent=2)}
+---
 
-    CANDIDATE RESUME:
-    {resume.model_dump_json(indent=2)}
+### Section F: Batch Folder Loop, Rate Limiting & Ranking
 
-    Return JSON matching this schema:
-    {match_schema}
+```python
+resume_folder = Path("resumes")
+all_results = []
 
-    Include inside details:
-    1. Candidate name
-    2. Matching skills
-    3. Missing important skills
-    4. Whether experience requirement is met
-    5. Overall match percentage (0 to 100)
-    6. A short final verdict
-    """
-    response = client.chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"}
-    )
-    return MatchResult(**json.loads(response.choices[0].message.content))
+for file_path in resume_folder.iterdir():
+    if file_path.suffix.lower() not in [".pdf", ".docx"]:
+        continue
+    print("\nProcessing:", file_path.name)
+    resume_text = read_resume(file_path)
+    parsed_resume = parse_resume(resume_text)  # LLM Call 1
+    time.sleep(5)
+    result = final_score(job, parsed_resume)   # LLM Call 2
+    time.sleep(5)
+    print("Score:", result.score)
+    all_results.append({
+        "name": parsed_resume.name,
+        "score": result.score,
+        "details": result.details
+    })
+```
 
-# 5. Execution Pipeline
-if __name__ == "__main__":
-    job_description = """Paste your target Job Description here..."""
-    job = parse_job_description(job_description)
+* **File Filtering**: `if file_path.suffix.lower() not in [".pdf", ".docx"]: continue` safely skips unsupported files (such as `.png`/`.jpg` screenshots or hidden system files).
+* **Two LLM Calls per Candidate**:
+  1. `parse_resume(resume_text)` converts raw text into structured `Resume` JSON.
+  2. `final_score(job, parsed_resume)` compares `JobD` JSON against `Resume` JSON.
+* **Why `time.sleep(5)` appears twice**:
+  * API servers enforce **Rate Limits** (requests/tokens per minute) to prevent Denial-of-Service (DoS) overload.
+  * Placing `time.sleep(5)` after **both** LLM calls ensures a 5-second cooldown between `parse_resume()` and `final_score()`, as well as between `final_score()` and the next candidate's `parse_resume()`, preventing `HTTP 429 Too Many Requests` errors.
+* **Sorting & Shortlisting**:
+  ```python
+  all_results.sort(key=lambda candidate: candidate["score"], reverse=True)
+  top_2 = all_results[:2]
+  worst_2 = all_results[-2:]
+  ```
+  Sorts all evaluated candidates from highest score to lowest (`reverse=True`), slices the first two (`[:2]`) as the **Top 2 Candidates** to interview, and slices the last two (`[-2:]`) as the **Lowest 2 Candidates**.
 
-    resume_folder = Path("resumes")
-    all_results = []
+---
 
-    for file_path in resume_folder.iterdir():
-        if file_path.suffix.lower() not in [".pdf", ".docx"]:
-            continue
-
-        print(f"\nProcessing: {file_path.name}")
-        resume_text = read_resume(file_path)
-
-        parsed_resume = parse_resume(resume_text)
-        time.sleep(5)  # Rate-limit protection
-
-        result = final_score(job, parsed_resume)
-        time.sleep(5)  # Rate-limit protection
-
-        print("Score:", result.score)
-        all_results.append({
-            "name": parsed_resume.name,
-            "score": result.score,
-            "details": result.details
-        })
-
-    all_results.sort(key=lambda c: c["score"], reverse=True)
-
-    print("\n--- TOP 2 CANDIDATES ---")
-    for candidate in all_results[:2]:
-        print(f"{candidate['name']} - {candidate['score']}%")
-        print(candidate["details"])
-
-    print("\n--- LOWEST 2 CANDIDATES ---")
-    for candidate in all_results[-2:]:
-        print(f"{candidate['name']} - {candidate['score']}%")
-        print(candidate["details"])
+## to Run
+```bash
+python -m period5
 ```
 
 ---
