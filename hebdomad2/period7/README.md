@@ -119,6 +119,11 @@ source .venv/bin/activate
 uv add groq python-dotenv
 ```
 
+### to run
+```bash
+python -m react_chain
+```
+
 ---
 
 ## 4. Key Takeaways & Best Practices
