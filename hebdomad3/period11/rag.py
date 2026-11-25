@@ -15,8 +15,8 @@ model="openai/gpt-oss-120b"
 
 # step 1
 knowledge_base={
-    "age" : " The age of pratyush is 25 years",
-    "net worth" : "The net worth of pratyush is 2000"
+    "age" : " The age of shamanth is 22 years",
+    "net worth" : "The net worth of shamanth is 5000"
 }
 
 # step 2 retreieval
@@ -47,5 +47,5 @@ def ask_llm(question):
     return answer
 
 
-question="what is pratyush's agge?"
+question="what is shamanth age?"
 print(ask_llm(question))
