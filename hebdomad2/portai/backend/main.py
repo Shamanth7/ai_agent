@@ -4,6 +4,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
 from pydantic import BaseModel
 from pypdf import PdfReader
@@ -15,17 +16,28 @@ client = Groq(
 )
 
 model = "openai/gpt-oss-120b"
-app=FastAPI()
+app = FastAPI()
+
+# Allow the frontend (index.html) to call this API from the browser
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # replace with your frontend URL when you deploy
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Parsed once at startup and reused for every chat request
+resume_data = None
 
 
-
-#parse resume
+# parse resume
 class Experience(BaseModel):
     company: str | None = None
     role: str | None = None
     duration: str | None = None
     description: str | None = None
     skills_used: list[str] = []
+
 
 class Resume(BaseModel):
     name: str | None = None
@@ -39,10 +51,14 @@ class Resume(BaseModel):
     education: list[str] = []
     projects: list[str] = []
     certifications: list[str] = []
+
+
 resume_schema = Resume.model_json_schema()
+
 
 class ChatRequest(BaseModel):
     question: str
+
 
 def ask_candidate(question: str, resume: Resume):
 
@@ -70,26 +86,16 @@ say
 """
 
     response = client.chat.completions.create(
-
         model=model,
-
         messages=[
-
-            {
-                "role":"system",
-                "content":system_prompt
-            },
-
-            {
-                "role":"user",
-                "content":question
-            }
-
-        ]
-
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question},
+        ],
     )
 
     return response.choices[0].message.content
+
+
 def parse_resume(resume_text):
     system_prompt = f"""
     You are an expert resume parser.
@@ -128,25 +134,20 @@ def parse_resume(resume_text):
 
     {resume_text}
     """
-    message_system={
-        "role" : "system",
-        "content" : system_prompt
-    }
-    message_user={
-        "role" : "user",
-        "content" : user_prompt
-    }
-    messages=[message_system, message_user]
-    response_format={
-        "type": "json_object"
-    }
-    response=client.chat.completions.create(model=model, messages=messages, response_format=response_format)
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    response_format = {"type": "json_object"}
+    response = client.chat.completions.create(
+        model=model, messages=messages, response_format=response_format
+    )
     raw_output = response.choices[0].message.content
     data = json.loads(raw_output)
-    resume = Resume(**data)
-    return resume
+    return Resume(**data)
 
-#pdf extraction
+
+# pdf extraction
 def read_pdf(file_path: Path):
 
     reader = PdfReader(file_path)
@@ -154,38 +155,26 @@ def read_pdf(file_path: Path):
     text = ""
 
     for page in reader.pages:
-
         page_text = page.extract_text()
-
         if page_text:
             text += page_text + "\n"
 
     return text
 
+
+@app.on_event("startup")
+def load_resume():
+    global resume_data
+    resume_text = read_pdf(Path(__file__).parent / "my_resume.pdf")
+    resume_data = parse_resume(resume_text)
+
+
 @app.get("/")
 def home():
-    # resume_text=read_pdf(Path("my_resume.pdf"))
-    # resume=parse_resume(resume_text)
-    return {
-        "message" : "Ye home page hai"
-    }
-# chatgpt.cpom
-#chatgot.com/aceeddferre5e
+    return {"message": "Ye home page hai"}
 
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-    resume_text=read_pdf(Path("my_resume.pdf"))
-    resume=parse_resume(resume_text)
-    answer=ask_candidate(request.question, resume)
-    return {
-        "answer": answer
-    }
-
-
-
-
-# youtube.com
-# youtube.com/padho_with_pratyush
-# youtube.com/padho_with_pratyush/videos
-# youtube.com/padho_with_pratyush/playlists
+    answer = ask_candidate(request.question, resume_data)
+    return {"answer": answer}
