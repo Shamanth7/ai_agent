@@ -3,182 +3,290 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>PortAI – Chat with my portfolio</title>
+<title>Ask my résumé</title>
+<meta name="description" content="Chat with an AI that has read my résumé. Ask about my experience, skills and projects." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #0b0f1a;
-    --panel: #121829;
-    --border: #232b45;
-    --text: #e8ecf8;
-    --muted: #8b95b5;
-    --accent: #6c8cff;
-    --accent2: #a06cff;
-    --user: linear-gradient(135deg, var(--accent), var(--accent2));
+    --blue: #4a3bff;
+    --blue-dot: #6254ff;
+    --ink: #1b1464;
+    --paper: #f3f0ff;
+    --sun: #ffd23f;
+    --pink: #ff8ad8;
+    --mint: #7cf2c1;
+    --white: #ffffff;
+    --font: "Bricolage Grotesque", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --hard: 6px 6px 0 var(--ink);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: light; }
   body {
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: radial-gradient(circle at 20% 0%, #172044 0%, var(--bg) 55%);
-    color: var(--text);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
+    font-family: var(--font);
+    color: var(--white);
+    background-color: var(--blue);
+    background-image: radial-gradient(var(--blue-dot) 1.5px, transparent 1.5px);
+    background-size: 26px 26px;
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
   }
-  .app {
-    width: 100%;
-    max-width: 820px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    padding: 20px 16px;
+  .wrap {
+    max-width: 1180px; margin: 0 auto; padding: 32px;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(380px, 500px);
+    gap: 56px; align-items: start;
   }
-  header { text-align: center; padding: 8px 0 18px; }
-  .avatar {
-    width: 64px; height: 64px; border-radius: 50%;
-    background: var(--user);
-    display: grid; place-items: center;
-    font-size: 28px; margin: 0 auto 10px;
-    box-shadow: 0 0 30px rgba(108,140,255,.35);
-  }
-  header h1 { font-size: 1.4rem; }
-  header p { color: var(--muted); font-size: .9rem; margin-top: 4px; }
-  .status { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: .78rem; color: var(--muted); }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: #666; }
-  .dot.on { background: #3ddc84; box-shadow: 0 0 8px #3ddc84; }
-  .dot.off { background: #ff5c5c; }
 
-  #chat {
-    flex: 1;
-    overflow-y: auto;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    scroll-behavior: smooth;
+  /* ---------- left: hero ---------- */
+  .hero { padding-top: 8px; }
+  .face-wrap { --s: 170px; margin-bottom: 30px; }
+  .face {
+    position: relative; width: var(--s); height: calc(var(--s) * .92);
+    background: var(--sun); border: 3px solid var(--ink);
+    border-radius: 48% 52% 46% 54% / 56% 46% 54% 44%;
+    box-shadow: var(--hard);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: calc(var(--s) * .1);
   }
+  .eyes { display: flex; gap: calc(var(--s) * .09); margin-top: calc(var(--s) * .04); }
+  .eye {
+    width: calc(var(--s) * .23); height: calc(var(--s) * .23);
+    background: var(--white); border: 3px solid var(--ink); border-radius: 50%;
+    display: grid; place-items: center; overflow: hidden;
+    animation: blink 5.5s infinite;
+  }
+  @keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.08); } }
+  .look { display: grid; place-items: center; }
+  .pupil { width: 42%; aspect-ratio: 1; background: var(--ink); border-radius: 50%; display: block; }
+  .mouth {
+    width: calc(var(--s) * .2); height: calc(var(--s) * .1);
+    border: 3px solid var(--ink); border-top: 0;
+    border-radius: 0 0 calc(var(--s) * .2) calc(var(--s) * .2);
+    transition: all .2s ease;
+  }
+  .cheek { position: absolute; width: calc(var(--s) * .12); height: calc(var(--s) * .07); background: var(--pink); border-radius: 50%; bottom: 29%; opacity: .9; }
+  .cheek.l { left: 14%; } .cheek.r { right: 14%; }
+  .face.thinking .mouth { width: calc(var(--s) * .08); height: calc(var(--s) * .08); border: 3px solid var(--ink); border-radius: 50%; }
+  .face.thinking .look { animation: scan 1.3s ease-in-out infinite; }
+  @keyframes scan { 0%, 100% { transform: translateX(-3px); } 50% { transform: translateX(3px); } }
+
+  h1 {
+    font-weight: 800; font-size: clamp(2.5rem, 5.2vw, 4.4rem);
+    line-height: .96; letter-spacing: -.035em; max-width: 13ch;
+    font-variation-settings: "opsz" 96;
+  }
+  .sub { margin-top: 20px; font-size: 1.15rem; line-height: 1.5; max-width: 38ch; color: rgba(255,255,255,.88); }
+
+  .stickers { list-style: none; display: flex; flex-wrap: wrap; gap: 14px 12px; margin-top: 36px; }
+  .sticker {
+    font: inherit; font-weight: 600; font-size: 1rem; color: var(--ink);
+    background: var(--sun); border: 3px solid var(--ink); border-radius: 14px;
+    padding: 10px 16px; cursor: pointer; box-shadow: 4px 4px 0 var(--ink);
+    transform: rotate(var(--r, 0deg));
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .stickers li:nth-child(1) .sticker { --r: -2deg; background: var(--sun); }
+  .stickers li:nth-child(2) .sticker { --r: 1.5deg; background: var(--pink); }
+  .stickers li:nth-child(3) .sticker { --r: -1deg; background: var(--white); }
+  .stickers li:nth-child(4) .sticker { --r: 2deg; background: var(--mint); }
+  .stickers li:nth-child(5) .sticker { --r: -1.5deg; background: var(--sun); }
+  .sticker:hover { transform: rotate(0) translateY(-3px); box-shadow: 6px 7px 0 var(--ink); }
+  .sticker:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+
+  /* ---------- right: chat card ---------- */
+  .card {
+    position: sticky; top: 32px;
+    height: calc(100dvh - 64px); min-height: 460px;
+    background: var(--paper); color: var(--ink);
+    border: 3px solid var(--ink); border-radius: 22px; box-shadow: 8px 8px 0 var(--ink);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .card-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px; border-bottom: 3px solid var(--ink); background: var(--white);
+    font-weight: 700;
+  }
+  .status { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; font-weight: 600; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #b5b0d6; border: 2px solid var(--ink); }
+  .dot.on { background: var(--mint); } .dot.off { background: #ff6b6b; }
+
+  #log { flex: 1; overflow-y: auto; list-style: none; padding: 20px 18px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
   .msg {
-    max-width: 82%;
-    padding: 11px 15px;
-    border-radius: 16px;
-    line-height: 1.5;
-    font-size: .95rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    animation: pop .2s ease;
+    max-width: 88%; padding: 11px 15px; border: 2.5px solid var(--ink);
+    font-size: 1rem; line-height: 1.55; animation: pop .22s ease;
   }
-  .msg.bot { background: #1b2340; border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; }
-  .msg.user { background: var(--user); align-self: flex-end; border-bottom-right-radius: 4px; color: #fff; }
-  .msg.error { background: #3a1c24; border: 1px solid #6b2a38; color: #ffb3bf; }
-  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
+  .msg.you { align-self: flex-end; background: var(--sun); font-weight: 600; border-radius: 18px 18px 4px 18px; }
+  .msg.bot { align-self: flex-start; background: var(--white); border-radius: 18px 18px 18px 4px; }
+  .msg p + p, .msg p + ul, .msg ul + p { margin-top: .7em; }
+  .msg ul { padding-left: 1.2em; } .msg li + li { margin-top: .3em; }
 
-  .typing { display: flex; gap: 5px; padding: 14px 16px; }
-  .typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: bounce 1.2s infinite; }
-  .typing span:nth-child(2) { animation-delay: .15s; }
-  .typing span:nth-child(3) { animation-delay: .3s; }
-  @keyframes bounce { 0%,60%,100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-6px); opacity: 1; } }
+  .think { display: inline-flex; align-items: center; gap: 10px; font-size: .92rem; color: #4d4691; }
+  .bounce { display: inline-flex; gap: 4px; }
+  .bounce i { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); animation: hop 1s infinite; }
+  .bounce i:nth-child(2) { animation-delay: .15s; } .bounce i:nth-child(3) { animation-delay: .3s; }
+  @keyframes hop { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
 
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
-  .chip {
-    background: transparent; border: 1px solid var(--border); color: var(--muted);
-    padding: 7px 13px; border-radius: 999px; font-size: .82rem; cursor: pointer;
-    transition: .15s;
+  .err button {
+    margin-top: 10px; font: inherit; font-weight: 600; font-size: .88rem; cursor: pointer;
+    background: var(--pink); color: var(--ink); border: 2.5px solid var(--ink); border-radius: 10px; padding: 6px 12px;
   }
-  .chip:hover { border-color: var(--accent); color: var(--text); }
 
-  form { display: flex; gap: 10px; }
-  input {
-    flex: 1; background: var(--panel); border: 1px solid var(--border);
-    color: var(--text); padding: 14px 16px; border-radius: 12px; font-size: .95rem; outline: none;
+  .ask { display: flex; gap: 10px; padding: 14px; border-top: 3px solid var(--ink); background: var(--white); }
+  .ask input {
+    flex: 1; min-width: 0; font: inherit; font-size: 1rem; color: var(--ink);
+    background: var(--paper); border: 2.5px solid var(--ink); border-radius: 12px; padding: 12px 14px; outline: none;
   }
-  input:focus { border-color: var(--accent); }
-  button.send {
-    background: var(--user); color: #fff; border: none; border-radius: 12px;
-    padding: 0 22px; font-size: .95rem; font-weight: 600; cursor: pointer;
+  .ask input::placeholder { color: #7c76ad; }
+  .ask input:focus { box-shadow: 3px 3px 0 var(--blue); }
+  .go {
+    font: inherit; font-weight: 700; color: var(--ink); background: var(--pink);
+    border: 2.5px solid var(--ink); border-radius: 12px; padding: 0 20px; cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink); transition: transform .1s ease, box-shadow .1s ease;
   }
-  button.send:disabled { opacity: .5; cursor: not-allowed; }
-  footer { text-align: center; color: var(--muted); font-size: .72rem; margin-top: 10px; }
+  .go:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+  .go:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+  .go:disabled { opacity: .5; cursor: not-allowed; }
+
+  .note { margin-top: 28px; font-size: .82rem; color: rgba(255,255,255,.75); max-width: 42ch; }
+
+  :focus-visible { outline: 3px solid var(--white); outline-offset: 3px; }
+  .card :focus-visible { outline-color: var(--blue); }
+  .ask input:focus-visible { outline: none; }
+
+  /* ---------- small screens ---------- */
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: minmax(0, 1fr); gap: 36px; padding: 22px 18px 32px; }
+    .face-wrap { --s: 118px; margin-bottom: 22px; }
+    .card { position: static; height: min(78dvh, 640px); box-shadow: 6px 6px 0 var(--ink); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="avatar">🤖</div>
-    <h1>Chat with my AI Portfolio</h1>
-    <p>Ask anything about my experience, skills, projects or education.</p>
-    <div class="status"><span class="dot" id="dot"></span><span id="statusText">Connecting…</span></div>
-  </header>
+<div class="wrap">
 
-  <div id="chat"></div>
+  <section class="hero">
+    <div class="face-wrap" aria-hidden="true">
+      <div class="face" id="face">
+        <div class="eyes">
+          <div class="eye"><span class="look"><span class="pupil"></span></span></div>
+          <div class="eye"><span class="look"><span class="pupil"></span></span></div>
+        </div>
+        <div class="mouth"></div>
+        <span class="cheek l"></span><span class="cheek r"></span>
+      </div>
+    </div>
+    <h1>Curious about me? Just ask.</h1>
+    <p class="sub">I've read the whole thing so you don't have to. Pick a question or type your own.</p>
+    <ul class="stickers" id="stickers"></ul>
+    <p class="note">AI-generated answers, based only on my résumé. The first reply can take a few seconds.</p>
+  </section>
 
-  <div class="chips" id="chips"></div>
+  <section class="card" aria-label="Chat">
+    <div class="card-head">
+      <span>Chat with my résumé</span>
+      <span class="status"><i class="dot" id="dot"></i><span id="statusText">Checking…</span></span>
+    </div>
+    <ol id="log" aria-live="polite"></ol>
+    <form class="ask" id="form" autocomplete="off">
+      <input id="input" type="text" placeholder="Type your question…" aria-label="Your question" required />
+      <button class="go" id="send" type="submit">Ask</button>
+    </form>
+  </section>
 
-  <form id="form">
-    <input id="input" type="text" placeholder="Ask a question about me…" autocomplete="off" required />
-    <button class="send" id="send" type="submit">Send</button>
-  </form>
-  <footer>Answers are generated from my resume only.</footer>
 </div>
 
 <script>
-  // Change this if your backend runs elsewhere (or after deployment)
-  const API_URL = "https://ai-agent-y198.vercel.app";;
+  // Local backend while developing, deployed backend otherwise.
+  const LOCAL = ["localhost", "127.0.0.1", ""].includes(location.hostname);
+  const API_URL = LOCAL ? "http://127.0.0.1:8000" : "https://ai-agent-y198.vercel.app";
 
-  const chat = document.getElementById("chat");
+  const log = document.getElementById("log");
   const form = document.getElementById("form");
   const input = document.getElementById("input");
   const sendBtn = document.getElementById("send");
-  const chipsBox = document.getElementById("chips");
+  const stickersEl = document.getElementById("stickers");
+  const face = document.getElementById("face");
   const dot = document.getElementById("dot");
   const statusText = document.getElementById("statusText");
 
-  const suggestions = [
+  const starters = [
     "Tell me about yourself",
-    "What are your key skills?",
-    "Describe your work experience",
-    "What projects have you built?",
-    "What is your education?",
-    "How many years of experience do you have?"
+    "What are your strongest skills?",
+    "Walk me through your experience",
+    "Which projects are you proud of?",
+    "What did you study?"
   ];
-
-  suggestions.forEach(q => {
+  starters.forEach(q => {
+    const li = document.createElement("li");
     const b = document.createElement("button");
-    b.type = "button";
-    b.className = "chip";
-    b.textContent = q;
-    b.onclick = () => ask(q);
-    chipsBox.appendChild(b);
+    b.type = "button"; b.className = "sticker"; b.textContent = q;
+    b.addEventListener("click", () => ask(q));
+    li.appendChild(b); stickersEl.appendChild(li);
   });
 
-  function addMessage(text, type) {
-    const div = document.createElement("div");
-    div.className = "msg " + type;
-    div.textContent = text;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-    return div;
+  /* ---- eyes follow the pointer ---- */
+  const eyes = [...document.querySelectorAll(".eye")];
+  document.addEventListener("pointermove", e => {
+    eyes.forEach(eye => {
+      const r = eye.getBoundingClientRect();
+      const dx = e.clientX - (r.left + r.width / 2);
+      const dy = e.clientY - (r.top + r.height / 2);
+      const dist = Math.hypot(dx, dy) || 1;
+      const max = r.width * 0.2;
+      const k = Math.min(dist, max) / dist;
+      eye.querySelector(".pupil").style.transform = `translate(${dx * k}px, ${dy * k}px)`;
+    });
+  });
+
+  /* ---- reply formatting (escapes HTML first) ---- */
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function inline(s) { return s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>"); }
+  function format(text) {
+    let html = "", inList = false;
+    esc(text).split("\n").forEach(raw => {
+      let line = raw.replace(/^#{1,6}\s+/, "");
+      if (/^\s*\|?[\s:|-]+\|?\s*$/.test(line) && line.includes("-") && line.includes("|")) return;
+      if (line.trim().startsWith("|")) line = line.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim()).join(" / ");
+      const m = line.match(/^\s*[-*•]\s+(.*)/);
+      if (m) {
+        if (!inList) { html += "<ul>"; inList = true; }
+        html += "<li>" + inline(m[1]) + "</li>";
+      } else {
+        if (inList) { html += "</ul>"; inList = false; }
+        if (line.trim()) html += "<p>" + inline(line) + "</p>";
+      }
+    });
+    if (inList) html += "</ul>";
+    return html;
   }
 
-  function addTyping() {
-    const div = document.createElement("div");
-    div.className = "msg bot typing";
-    div.innerHTML = "<span></span><span></span><span></span>";
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-    return div;
+  function bubble(kind) {
+    const li = document.createElement("li");
+    li.className = "msg " + kind;
+    log.appendChild(li);
+    return li;
   }
+  function toBottom() { log.scrollTop = log.scrollHeight; }
+
+  bubble("bot").innerHTML = "<p>Hey there! Ask me anything about my background, skills or projects.</p>";
 
   async function ask(question) {
-    if (!question.trim()) return;
-    chipsBox.style.display = "none";
-    addMessage(question, "user");
+    question = question.trim();
+    if (!question) return;
     input.value = "";
-    sendBtn.disabled = true;
-    input.disabled = true;
-    const typing = addTyping();
 
+    bubble("you").textContent = question;
+    const reply = bubble("bot");
+    reply.innerHTML = '<span class="think"><span class="bounce"><i></i><i></i><i></i></span>Flipping through the résumé…</span>';
+    toBottom();
+
+    face.classList.add("thinking");
+    sendBtn.disabled = true; input.disabled = true;
     try {
       const res = await fetch(API_URL + "/chat", {
         method: "POST",
@@ -187,36 +295,33 @@
       });
       if (!res.ok) throw new Error("Server returned " + res.status);
       const data = await res.json();
-      typing.remove();
-      addMessage(data.answer, "bot");
+      reply.innerHTML = format(data.answer || "");
     } catch (err) {
-      typing.remove();
-      addMessage("Couldn't reach the server. Make sure the backend is running. (" + err.message + ")", "bot error");
+      reply.classList.add("err");
+      reply.innerHTML = "<p>That didn't go through. The server may be starting up or offline (" + esc(err.message) + ").</p>";
+      const retry = document.createElement("button");
+      retry.type = "button"; retry.textContent = "Ask again";
+      retry.addEventListener("click", () => { reply.previousElementSibling.remove(); reply.remove(); ask(question); });
+      reply.appendChild(retry);
     } finally {
-      sendBtn.disabled = false;
-      input.disabled = false;
+      face.classList.remove("thinking");
+      sendBtn.disabled = false; input.disabled = false;
       input.focus();
+      toBottom();
     }
   }
 
-  form.addEventListener("submit", e => {
-    e.preventDefault();
-    ask(input.value);
-  });
+  form.addEventListener("submit", e => { e.preventDefault(); ask(input.value); });
 
   async function checkBackend() {
     try {
       const r = await fetch(API_URL + "/");
       if (!r.ok) throw new Error();
-      dot.className = "dot on";
-      statusText.textContent = "Online";
+      dot.className = "dot on"; statusText.textContent = "Online";
     } catch {
-      dot.className = "dot off";
-      statusText.textContent = "Backend offline";
+      dot.className = "dot off"; statusText.textContent = "Offline";
     }
   }
-
-  addMessage("Hi! 👋 I'm an AI assistant representing this candidate. Ask me anything about their background.", "bot");
   checkBackend();
 </script>
 </body>
