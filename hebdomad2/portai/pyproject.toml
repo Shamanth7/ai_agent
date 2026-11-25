@@ -26,3 +26,11 @@ build-backend = "uv_build"
 
 [tool.vercel]
 entrypoint = "backend.main:app"
+
+dependencies = [
+    "fastapi",
+    "groq",
+    "pypdf",
+    "python-dotenv",
+    "pydantic",
+]
