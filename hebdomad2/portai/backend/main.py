@@ -21,13 +21,10 @@ app = FastAPI()
 # Allow the frontend (index.html) to call this API from the browser
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # replace with your frontend URL when you deploy
+    allow_origins=["*"],  # replace with your frontend URL after deployment
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Parsed once at startup and reused for every chat request
-resume_data = None
 
 
 # parse resume
@@ -162,11 +159,15 @@ def read_pdf(file_path: Path):
     return text
 
 
-@app.on_event("startup")
-def load_resume():
+# Parsed on the first question, then reused (works on serverless hosts like Vercel)
+resume_data = None
+
+
+def get_resume():
     global resume_data
-    resume_text = read_pdf(Path(__file__).parent / "my_resume.pdf")
-    resume_data = parse_resume(resume_text)
+    if resume_data is None:
+        resume_data = parse_resume(read_pdf(Path(__file__).parent / "my_resume.pdf"))
+    return resume_data
 
 
 @app.get("/")
@@ -176,5 +177,4 @@ def home():
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-    answer = ask_candidate(request.question, resume_data)
-    return {"answer": answer}
+    return {"answer": ask_candidate(request.question, get_resume())}
