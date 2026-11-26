@@ -173,3 +173,63 @@ Unlike generative LLMs that require external API keys, lightweight embedding mod
 ```bash
 uv add numpy sentence-transformers
 ```
+
+---
+
+## 5. Implementation Code (`embed.py`)
+
+```python
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+from groq import Groq
+import numpy as np
+from sentence_transformers import SentenceTransformer
+
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (
+        np.linalg.norm(a) * np.linalg.norm(b)
+    )
+
+
+model = SentenceTransformer("all-MiniLM-L6-v2")  # 384-dimensional model
+text = "Machine learning is fun."
+
+# embedding = model.encode(text)
+# print(embedding.shape)   # Output: (384,)
+# print(embedding[:10])    # First 10 float values of the vector
+
+t1 = "There are 24 paid leaves"
+t2 = "cat is a wild animal"
+
+v1 = model.encode(t1)
+v2 = model.encode(t2)
+print(cosine_similarity(v1, v2))
+```
+
+### Terminal Output
+
+```text
+(period12) shamanth@yoga6:~/Documents/Default Project/AI_agents/hebdomad3/period12$ python -m embed
+Loading weights: 100%|████████████████████████████████████████| 103/103 [00:00<00:00, 2819.65it/s]
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+0.022415556
+```
+
+---
+
+## 6. Code Breakdown & Explanation
+
+1. **Local Model Initialization (`SentenceTransformer("all-MiniLM-L6-v2")`)**:
+   - Downloads (on first run) and loads the lightweight `all-MiniLM-L6-v2` embedding model directly onto your local machine—requiring **zero API calls or Groq credits**.
+   - Every string passed into `model.encode(...)` is mapped into a dense NumPy array of **384 floating-point numbers** (`shape: (384,)`).
+2. **Vector Encoding (`model.encode(t1)` & `model.encode(t2)`)**:
+   - `t1` (`"There are 24 paid leaves"`) represents an HR/company leave policy concept, converted into vector `v1`.
+   - `t2` (`"cat is a wild animal"`) represents an unrelated zoology statement, converted into vector `v2`.
+3. **Cosine Similarity Calculation (`cosine_similarity(a, b)`)**:
+   - `np.dot(a, b)` computes the dot product of the two 384-dimensional arrays.
+   - `np.linalg.norm(a) * np.linalg.norm(b)` normalizes by the lengths (magnitudes) of both vectors so sentence length does not skew the score.
+4. **Interpreting the Result (`0.022415556`)**:
+   - Because `0.022` is extremely close to `0.0` ($\approx 90^\circ$ orthogonal in vector space), the math confirms that `"There are 24 paid leaves"` and `"cat is a wild animal"` share virtually **no semantic overlap**.
+   - If you replace `t2` with `"How many vacation days do employees get?"`, the cosine similarity jumps significantly higher ($\approx 0.60+$), enabling RAG to retrieve the right document even without matching keywords.
