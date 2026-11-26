@@ -14,9 +14,9 @@ from groq import Groq
 # Load variables from .env
 load_dotenv()
 
-QDRANT_URL = os.getenv("QDRANT_URL", "").strip()
-QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "").strip()
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
 # ============================================================
